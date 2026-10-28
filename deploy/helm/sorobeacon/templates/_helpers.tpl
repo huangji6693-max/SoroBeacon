@@ -120,6 +120,9 @@ FLAPPING_EPISODES: {{ .Values.config.flappingEpisodes | int64 | quote }}
 FLAPPING_WINDOW: {{ .Values.config.flappingWindow | quote }}
 FLAPPING_QUIET_AFTER: {{ .Values.config.flappingQuietAfter | quote }}
 READYZ_LAG_THRESHOLD: {{ .Values.config.readyzLagThreshold | int64 | quote }}
+HEARTBEAT_URL: {{ .Values.config.heartbeatUrl | quote }}
+HEARTBEAT_INTERVAL: {{ .Values.config.heartbeatInterval | quote }}
+HEARTBEAT_FAILURE_SUFFIX: {{ .Values.config.heartbeatFailureSuffix | quote }}
 CHANNEL_DISABLE_AFTER_FAILURES: {{ .Values.config.channelDisableAfterFailures | int64 | quote }}
 NETWORKS: {{ .Values.config.networks | quote }}
 OIDC_ISSUER: {{ .Values.oidc.issuer | quote }}

@@ -214,6 +214,18 @@
           "minimum": 0,
           "description": "Ledger lag at which /readyz fails. 0 disables the check."
         },
+        "heartbeatUrl": {
+          "type": "string",
+          "description": "External dead-man's-switch endpoint (HEARTBEAT_URL). Treated as a credential by the application and never logged. Empty disables the heartbeat."
+        },
+        "heartbeatInterval": {
+          "type": "string",
+          "description": "How often a healthy instance pings (HEARTBEAT_INTERVAL, Go duration). Must be longer than pollInterval. Empty uses the application default (1m)."
+        },
+        "heartbeatFailureSuffix": {
+          "type": "string",
+          "description": "Path suffix for the one-per-outage failure ping (HEARTBEAT_FAILURE_SUFFIX), e.g. /fail. Requires heartbeatUrl; empty means success pings only."
+        },
         "networks": {
           "type": "string",
           "description": "NETWORKS: comma-separated chains to poll, primary first. Empty means the single chain NETWORK names."

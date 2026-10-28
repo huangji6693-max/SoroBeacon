@@ -7,7 +7,9 @@ which to attach to which job.
 
 Everything on this page is described from `internal/notify/` —
 `dispatcher.go` for retries and attempt records, `http.go` for the shared
-HTTP behaviour, and each channel's own file for its failure mode.
+HTTP behaviour, and each channel's own file for its failure mode. For the
+automated 7-point verification contract covering every registered channel in
+`DefaultFactory()`, see [Channel conformance](conformance.md).
 
 ## The comparison
 

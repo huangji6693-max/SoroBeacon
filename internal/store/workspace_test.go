@@ -395,6 +395,8 @@ var unscopedStoreMethods = map[string]string{
 	"MarkAlertInhibited":                 "the dispatcher marks an alert it already resolved, in the poller's cross-tenant context",
 	"SetAlertSuppressed":                 "the dispatcher marks an alert it already resolved, in the poller's cross-tenant context",
 	"RuleFiredWithin":                    "the inhibition check asks about one rule the dispatcher already resolved; rule_id implies the tenant",
+	"transferAlertTimeRange":             "the SQLite/Postgres transfer spans every workspace: it reads the copied alerts' created_at range to size the target's partitions before any row arrives",
+	"transferDeriveTable":                "the SQLite/Postgres transfer spans every workspace: it rebuilds alert_dedup from the alerts the transfer just copied",
 }
 
 // sqlSourceFiles lists every non-test Go source in the package directory.

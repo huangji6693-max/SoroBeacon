@@ -140,6 +140,21 @@ config:
   # Ledger lag at which /readyz fails. 0 disables the check, so a lagging
   # poller cannot take itself out of a load balancer without opting in.
   readyzLagThreshold: 0
+  # External dead-man's switch: while ingest is demonstrably healthy the leader
+  # pings this URL, so an external service notices when the pings stop. The URL
+  # is a credential — its path identifies the monitor — so the application
+  # never logs it or echoes it in an error message. Empty turns the heartbeat
+  # off.
+  heartbeatUrl: ""
+  # How often a healthy instance pings (Go duration). Must be longer than
+  # pollInterval: a ping goes out only after a new successful poll, so an
+  # interval at or below the poll cycle would read as no progress and the
+  # application rejects it at startup.
+  heartbeatInterval: "1m"
+  # Optional failure ping, once per outage, sent to heartbeatUrl plus this
+  # suffix (the convention is "/fail"). Requires heartbeatUrl; empty means
+  # success pings only, and the external service notices the silence itself.
+  heartbeatFailureSuffix: ""
   # Consecutive permanent channel failures (401/403/404) after which a
   # channel is taken out of rotation. 0 never auto-disables, which is the
   # behaviour every release before channel health had.

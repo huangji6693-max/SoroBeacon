@@ -49,22 +49,27 @@ type Metrics struct {
 	eventsMatched   *prometheus.CounterVec
 	ruleEvaluations *prometheus.CounterVec
 	// Per-rule-type metrics (cardinality bounded by rule type names)
-	ruleEvalsTotal    *prometheus.CounterVec
-	ruleMatchesTotal  *prometheus.CounterVec
-	ruleErrorsTotal   *prometheus.CounterVec
-	ruleDuration      *prometheus.HistogramVec
-	alertsFired     *prometheus.CounterVec
-	deliveries      *prometheus.CounterVec
-	throttles       *prometheus.CounterVec
-	httpDuration    *prometheus.HistogramVec
-	lastPollAgoSec  *prometheus.GaugeVec
-	pollPanics      *prometheus.CounterVec
-	breakerStates   *prometheus.GaugeVec
+	ruleEvalsTotal   *prometheus.CounterVec
+	ruleMatchesTotal *prometheus.CounterVec
+	ruleErrorsTotal  *prometheus.CounterVec
+	ruleDuration     *prometheus.HistogramVec
+	alertsFired      *prometheus.CounterVec
+	deliveries       *prometheus.CounterVec
+	throttles        *prometheus.CounterVec
+	httpDuration     *prometheus.HistogramVec
+	lastPollAgoSec   *prometheus.GaugeVec
+	pollPanics       *prometheus.CounterVec
+	breakerStates    *prometheus.GaugeVec
 
 	storeReads     *prometheus.CounterVec
 	storeFallbacks prometheus.Counter
 	replicaEnabled prometheus.Gauge
 	deadLetters    prometheus.Gauge
+	// heartbeatLastSuccess is the unix time of the last heartbeat ping that
+	// confirmed ingest was healthy. Zero (unset) means none has succeeded
+	// since the process started, which is the signal a dashboard alert can
+	// be built on.
+	heartbeatLastSuccess prometheus.Gauge
 }
 
 // networkLabel is the Prometheus label every ingest metric carries.
@@ -244,12 +249,17 @@ func New() *Metrics {
 			Name: "sorobeacon_dead_letters_total",
 			Help: "Current number of dead-lettered delivery attempts waiting for review or re-drive.",
 		}),
+
+		heartbeatLastSuccess: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "sorobeacon_heartbeat_last_success_timestamp_seconds",
+			Help: "Unix time of the last heartbeat ping sent while ingest was healthy; 0 when none has succeeded this run.",
+		}),
 	}
 	m.registry.MustRegister(m.pollsTotal, m.pollDuration, m.pollLagLedger,
 		m.eventsScanned, m.eventsMatched, m.ruleEvaluations, m.alertsFired, m.deliveries, m.throttles,
 		m.httpDuration, m.lastPollAgoSec, m.pollPriorityContracts, m.pollPriorityLag,
 		m.reorgsTotal, m.lastReorgLedger, m.breakerStates, m.pollPanics,
-		m.storeReads, m.storeFallbacks, m.replicaEnabled, m.deadLetters,
+		m.storeReads, m.storeFallbacks, m.replicaEnabled, m.deadLetters, m.heartbeatLastSuccess,
 		m.ruleEvalsTotal, m.ruleMatchesTotal, m.ruleErrorsTotal, m.ruleDuration)
 	return m
 }
@@ -481,6 +491,17 @@ func (m *Metrics) RecordDeadLetter() {
 	m.deadLetters.Inc()
 }
 
+// RecordHeartbeatSuccess stamps the last time a heartbeat ping confirmed
+// that ingest was healthy. It is how an operator proves from inside the
+// instance that the external dead-man's switch was being fed, without
+// looking at the external service.
+func (m *Metrics) RecordHeartbeatSuccess() {
+	if m == nil {
+		return
+	}
+	m.heartbeatLastSuccess.SetToCurrentTime()
+}
+
 // ClearDeadLetter decrements the number of dead letters after a successful
 // redrive. Prometheus gauges clamp naturally at the store's authoritative
 // value when the next SetDeadLetters refresh runs.
@@ -550,3 +571,38 @@ func (m *Metrics) Middleware(next http.Handler) http.Handler {
 // context. Implemented via the RoutePatternProvider interface so this
 // package does not import chi; the wire-up lives in cmd/sorobeacon.
 var RoutePattern func(*http.Request) string
+
+// ExportedMetricNames returns the canonical list of base Prometheus metric
+// names exported by SoroBeacon. Histogram metrics also emit _bucket, _sum,
+// and _count suffixes when scraped.
+func ExportedMetricNames() []string {
+	return []string{
+		"sorobeacon_polls_total",
+		"sorobeacon_poll_duration_seconds",
+		"sorobeacon_poll_lag_ledgers",
+		"sorobeacon_poll_priority_contracts",
+		"sorobeacon_poll_lag_ledgers_by_priority",
+		"sorobeacon_reorgs_total",
+		"sorobeacon_last_reorg_ledger",
+		"sorobeacon_events_scanned_total",
+		"sorobeacon_events_matched_total",
+		"sorobeacon_rule_evaluations_total",
+		"sorobeacon_rule_evals_total",
+		"sorobeacon_rule_matches_total",
+		"sorobeacon_rule_errors_total",
+		"sorobeacon_rule_duration_seconds",
+		"sorobeacon_alerts_fired_total",
+		"sorobeacon_alert_deliveries_total",
+		"sorobeacon_alert_throttles_total",
+		"sorobeacon_channel_breaker_state",
+		"sorobeacon_http_request_duration_seconds",
+		"sorobeacon_seconds_since_last_poll",
+		"sorobeacon_poll_panics_total",
+		"sorobeacon_store_reads_total",
+		"sorobeacon_store_replica_fallbacks_total",
+		"sorobeacon_store_replica_enabled",
+		"sorobeacon_dead_letters_total",
+		"sorobeacon_alerts_stream_dropped_total",
+	}
+}
+
